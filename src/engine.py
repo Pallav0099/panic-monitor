@@ -116,7 +116,7 @@ class MonitorEngine:
         if self._scheduler and self._scheduler.running:
             self._scheduler.shutdown(wait=True)
         if self._iroh:
-            await self._iroh.node().shutdown(False)
+            await self._iroh.node().shutdown()
         logger.info("Engine stopped")
 
     # ------------------------------------------------------------------
@@ -158,11 +158,13 @@ class MonitorEngine:
             )
             peer.consecutive_failures += 1
             peer.current_status = PeerStatus.DEAD
+            msg = exc.message() if hasattr(exc, "message") else str(exc)
             logger.warning(
-                "{}: DEAD  failures={}  reason={}",
+                "{}: DEAD  failures={}  reason={}: {}",
                 label,
                 peer.consecutive_failures,
                 type(exc).__name__,
+                msg,
             )
 
         finally:
