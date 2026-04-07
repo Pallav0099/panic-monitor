@@ -26,7 +26,7 @@ class HeartbeatProtocol:
     """Accepts incoming heartbeat probes from other panic-monitor nodes."""
 
     async def accept(self, conn) -> None:
-        remote = conn.get_remote_node_id()
+        remote = conn.remote_node_id()
         logger.debug("Heartbeat probe received from {}", remote[:12])
         await asyncio.sleep(0.1)
         conn.close(0, b"pong")
