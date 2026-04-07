@@ -25,8 +25,7 @@ PROBE_TIMEOUT_SECONDS = 10
 class HeartbeatProtocol:
     """Accepts incoming heartbeat probes from other panic-monitor nodes."""
 
-    async def accept(self, connecting) -> None:
-        conn = await connecting.connect()
+    async def accept(self, conn) -> None:
         remote = conn.get_remote_node_id()
         logger.debug("Heartbeat probe received from {}", remote[:12])
         await asyncio.sleep(0.1)
@@ -39,7 +38,7 @@ class HeartbeatProtocol:
 class HeartbeatProtocolCreator:
     """Factory required by iroh's protocol registration system."""
 
-    def create(self, endpoint, client):
+    def create(self, endpoint):
         return HeartbeatProtocol()
 
 
@@ -217,9 +216,12 @@ class MonitorEngine:
         watchlist = Watchlist.model_validate_json(raw)
         peers: dict[str, PeerState] = {}
         for entry in watchlist.peers:
+            try:
+                pub_key = iroh.PublicKey.from_string(entry.node_id)
+            except iroh.iroh_ffi.IrohError:
+                logger.error("Skipping peer '{}' — invalid node_id: {}", entry.alias or "?", entry.node_id)
+                continue
             state = PeerState(entry)
-            # Pre-cache FFI objects to avoid repeated Rust-heap allocations per cycle
-            pub_key = iroh.PublicKey.from_string(entry.node_id)
             state.cached_node_addr = iroh.NodeAddr(
                 pub_key, entry.relay_url, entry.direct_addrs,
             )
