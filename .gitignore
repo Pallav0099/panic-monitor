@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Venv
+.venv/
+
+# Secrets
+secret.key
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/

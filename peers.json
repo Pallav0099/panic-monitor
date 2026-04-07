@@ -1,0 +1,10 @@
+{
+  "peers": [
+    {
+      "node_id": "REPLACE_WITH_REAL_NODE_ID",
+      "alias": "server-alpha",
+      "relay_url": "https://relay.iroh.network.",
+      "direct_addrs": []
+    }
+  ]
+}
