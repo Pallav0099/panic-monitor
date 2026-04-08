@@ -8,8 +8,9 @@ build/
 # Venv
 .venv/
 
-# Secrets
+# Secrets & per-machine trust
 secret.key
+trusted_peers.json
 
 # Logs
 *.log

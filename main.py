@@ -8,6 +8,7 @@ from pathlib import Path
 from loguru import logger
 
 from src.engine import MonitorEngine
+from src.trust import TrustManager
 
 
 def parse_args() -> argparse.Namespace:
@@ -15,26 +16,25 @@ def parse_args() -> argparse.Namespace:
         prog="panic-monitor",
         description="P2P health monitoring daemon for the PanicLab ecosystem",
     )
+
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--daemon", action="store_true", help="Run headless daemon")
     mode.add_argument("--tui", action="store_true", help="Launch interactive TUI")
+    mode.add_argument("--trust", type=str, metavar="NODE_ID", help="Trust a peer by NodeID")
+    mode.add_argument("--untrust", type=str, metavar="NODE_ID", help="Remove a peer from trust store")
+    mode.add_argument("--list-trusted", action="store_true", help="List all trusted peers")
 
+    parser.add_argument("--alias", type=str, default=None, help="Alias for --trust")
     parser.add_argument(
-        "--interval",
-        type=int,
-        default=30,
+        "--interval", type=int, default=30,
         help="Heartbeat interval in seconds (default: 30)",
     )
     parser.add_argument(
-        "--peers",
-        type=Path,
-        default=Path("./peers.json"),
+        "--peers", type=Path, default=Path("./peers.json"),
         help="Path to peers.json watchlist",
     )
     parser.add_argument(
-        "--identity",
-        type=Path,
-        default=Path("./secret.key"),
+        "--identity", type=Path, default=Path("./secret.key"),
         help="Path to ed25519 secret key file",
     )
     return parser.parse_args()
@@ -82,11 +82,40 @@ async def run_tui(engine: MonitorEngine) -> None:
 
 def cli_main() -> None:
     args = parse_args()
+    trust = TrustManager()
+    trust.load()
+
+    # Trust management commands — no daemon needed
+    if args.trust:
+        configure_logging()
+        trust.add_peer(args.trust, args.alias)
+        return
+
+    if args.untrust:
+        configure_logging()
+        trust.remove_peer(args.untrust)
+        return
+
+    if args.list_trusted:
+        peers = trust.list_peers()
+        if not peers:
+            print("No trusted peers.")
+            return
+        print(f"{'Alias':<20} {'Node ID':<68} {'Added'}")
+        print("-" * 100)
+        for p in peers:
+            alias = p.alias or "---"
+            added = p.added_at.strftime("%Y-%m-%d %H:%M")
+            print(f"{alias:<20} {p.node_id:<68} {added}")
+        return
+
+    # Daemon / TUI modes
     configure_logging(tui=args.tui)
 
     engine = MonitorEngine(
         identity_path=args.identity,
         peers_path=args.peers,
+        trust=trust,
         interval_seconds=args.interval,
     )
 

@@ -1,4 +1,4 @@
-iroh>=0.35.0
+iroh==0.35.0
 pydantic>=2.0
 textual>=0.40
 loguru>=0.7
